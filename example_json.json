@@ -1,0 +1,12 @@
+{
+    "name": "John Doe",
+    "age": 30,
+    "email": "john.doe@example.com",
+    "isActive": true,
+    "roles": ["admin", "user"],
+    "address": {
+        "street": "123 Main St",
+        "city": "Metropolis",
+        "zip": "12345"
+    }
+}

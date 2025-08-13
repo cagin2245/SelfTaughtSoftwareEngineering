@@ -155,7 +155,7 @@ static char * readFile(const char *path) {
 }
 
 static void runFile(int argc, char *argv[]) {
-    initVM();
+    // initVM();
 
     if(argc == 1){
         repl();
@@ -167,5 +167,5 @@ static void runFile(int argc, char *argv[]) {
         exit(64);
     }
 
-    freeVM();
+    // freeVM();
 }
