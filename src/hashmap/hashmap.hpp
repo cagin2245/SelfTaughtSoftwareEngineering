@@ -3,22 +3,36 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <algorithm> // En üste ekleyin
 
 
 template <typename Key, typename Value>
 class HashMap {
     private:
         static const size_t DEFAULT_CAPACITY = 16;
+        double loadFactor = 0.75;//Load factor for resizing
+        size_t currentSize = 0; // Current number of elements in the map        
         std::vector<std::list<std::pair<Key, Value>>> table;
         size_t hash (const Key& key) const {
             return std::hash<Key>()(key) % table.size();
         }
+        // Removed unused tables, size, numTables, and DEFAULT_LOAD_FACTOR.
         
     public:
-        HashMap() : table(DEFAULT_CAPACITY) {}
+        class HashNode {
+            public:
+                Key key;
+                Value value;
+                HashNode * next;
 
+                HashNode(const Key& k, const Value& v) : key(k), value(v), next(nullptr) {}
+        };
+        
+        HashMap() : table(DEFAULT_CAPACITY) {} // tabloyu başlatır
+        
         void insert(const Key& key, const Value& value) {
             size_t index = hash(key);
+        
             for (auto& pair : table[index]) {
                 if (pair.first == key) {
                     pair.second = value; // Update existing key
@@ -26,6 +40,15 @@ class HashMap {
                 }
             }
             table[index].emplace_back(key, value); // Insert new key-value pair
+        
+            
+            
+            currentSize++;
+            double loadFactor = static_cast<double>(currentSize) / table.size();
+        
+            if (loadFactor > this->loadFactor) {               
+                rehash(); // Resize if load factor exceeds threshold                
+            }
         }
 
         Value searchTable(const Key& key) const {
@@ -37,12 +60,13 @@ class HashMap {
             }
             return Value(); // Return default value if key is not found
         }
-
-
         bool isValid(const Key& key, Value& value) const;
         void print() const;
+        void printSorted() const;
         bool isEmpty() const;
         void remove(const Key& key);
+        void rehash();
+
     };
 
 
@@ -67,6 +91,29 @@ void HashMap<Key, Value>::print() const {
 }
 
 template <typename Key, typename Value>
+void HashMap<Key, Value>::printSorted() const {
+    std::vector<std::pair<Key, Value>> allPairs;
+    for (const auto& bucket : table) {
+        for (const auto& pair : bucket) {
+            allPairs.push_back(pair);
+        }
+    }
+    std::sort(allPairs.begin(), allPairs.end(),
+        [](const auto& a, const auto& b) {
+            
+            if constexpr (std::is_same<Key, std::string>::value) {
+                return std::stoi(a.first) < std::stoi(b.first);
+            } else {
+                return a.first < b.first;
+            }
+        });
+
+    for (const auto& pair : allPairs) {
+        std::cout << pair.first << ": " << pair.second << std::endl;
+    }
+}
+
+template <typename Key, typename Value>
 bool HashMap<Key, Value>::isEmpty() const {
     for (const auto& bucket : table) {
         if (!bucket.empty()) {
@@ -75,7 +122,6 @@ bool HashMap<Key, Value>::isEmpty() const {
     }
     return true; // All buckets are empty
 }
-
 template <typename Key, typename Value>
 void HashMap<Key, Value>::remove(const Key& key) {
     size_t index = hash(key);
@@ -88,3 +134,21 @@ void HashMap<Key, Value>::remove(const Key& key) {
     }
 
 }
+
+template <typename Key, typename Value>
+void HashMap<Key, Value>::rehash() {
+    size_t newCapacity = table.size() * 2;
+    std::vector<std::list<std::pair<Key, Value>>> newTable(newCapacity);
+    size_t newSize = 0;
+    for (const auto& bucket : table) {
+        for (const auto& pair : bucket) {
+            size_t newIndex = std::hash<Key>()(pair.first) % newCapacity;
+            newTable[newIndex].emplace_back(pair.first, pair.second);
+            ++newSize;
+        }
+    }
+    table = std::move(newTable);
+    std::cout << "Rehashed to new capacity: " << newCapacity << std::endl;
+    currentSize = newSize; // Eleman sayısını koru
+}
+
