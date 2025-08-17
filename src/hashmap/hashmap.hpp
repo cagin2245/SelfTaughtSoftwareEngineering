@@ -3,179 +3,260 @@
 #include <string>
 #include <vector>
 #include <list>
-#include <algorithm> // En üste ekleyin
+#include <algorithm>
 
-// HashMap: table tüm bucket'ları içerir, bucket ise her bir slotu temsil eder.
+// HashMap implementasyonu (iterator + const_iterator destekli)
 template <typename Key, typename Value>
-class HashMap {
-    private:
-        static const size_t DEFAULT_CAPACITY = 16;
-        double loadFactor = 0.75; // Load factor for resizing
-        size_t currentSize = 0; // Current number of elements in the map        
-        std::vector<std::list<std::pair<Key, Value>>> table; // table: tüm bucket'ları tutar
+class HashMap
+{
+private:
+    static const size_t DEFAULT_CAPACITY = 16;
+    double loadFactor = 0.75;
+    size_t currentSize = 0;
+    std::vector<std::list<std::pair<Key, Value>>> table;
 
-        size_t hash (const Key& key) const {
-            return std::hash<Key>()(key) % table.size();
+    size_t hash(const Key &key) const
+    {
+        return std::hash<Key>()(key) % table.size();
+    }
+
+    using Bucket = std::list<std::pair<Key, Value>>;
+    using Table = std::vector<Bucket>;
+
+public:
+    // --- Iterator ---
+    class iterator
+    {
+        Table *table;
+        size_t bucketIndex;
+        typename Bucket::iterator bucketIt;
+
+        void skipEmpty()
+        {
+            while (bucketIndex < table->size() && bucketIt == (*table)[bucketIndex].end())
+            {
+                ++bucketIndex;
+                if (bucketIndex < table->size())
+                {
+                    bucketIt = (*table)[bucketIndex].begin();
+                }
+                else
+                {
+                    // end() iteratörü -> bucketIt geçersiz olmalı
+                    bucketIt = typename Bucket::iterator();
+                }
+            }
         }
-        
+
     public:
-        class Iterator {
-            private:
-                typename std::list<std::pair<Key, Value>>::iterator it;
-                typename std::list<std::pair<Key, Value>>::iterator end;
-                typename std::list<std::pair<Key, Value>>::iterator currentTable;
-            public:
-                Iterator(typename std::list<std::pair<Key, Value>>::iterator begin, typename std::list<std::pair<Key, Value>>::iterator end)
-                    : it(begin), end(end) {}
-                
-                bool hasNext() const {
-                    return it != end;
-                }
-                
-                std::pair<Key, Value> next() {
-                    return *it++;
-                }
-        };
-        class HashNode {
-            public:
-                Key key;
-                Value value;
-                HashNode * next;
-
-                HashNode(const Key& k, const Value& v) : key(k), value(v), next(nullptr) {}
-        };
-        
-        HashMap() : table(DEFAULT_CAPACITY) {} // table'ı başlatır
-        HashMap(const HashMap& other) : table(other.table), currentSize(other.currentSize), loadFactor(other.loadFactor) {}
-        HashMap(HashMap&& other) noexcept : table(std::move(other.table)), currentSize(other.currentSize), loadFactor(other.loadFactor) {
-            other.currentSize = 0;
-        }
-       
-        std::vector<std::list<std::pair<Key, Value>>> getTable() const {
-            return table; // table'ı döndürür (tüm bucket'lar)
-        }
-        void insert(const Key& key, const Value& value) {
-            size_t index = hash(key);
-        
-            for (auto& pair : table[index]) {
-                if (pair.first == key) {
-                    pair.second = value; // Var olan anahtarı güncelle
-                    return;
-                }
-            }
-            table[index].emplace_back(key, value); // Yeni anahtar-değer çifti ekle
-            
-            currentSize++;
-            double currentLoadFactor = static_cast<double>(currentSize) / table.size();
-        
-            if (currentLoadFactor > loadFactor) {               
-                rehash(); // Load factor aşılırsa yeniden boyutlandır
-            }
+        iterator(Table *t, size_t idx)
+            : table(t), bucketIndex(idx), bucketIt(idx >= t->size() ? typename Bucket::iterator() : (*t)[idx].begin())
+        {
+            skipEmpty();
         }
 
-        Value searchTable(const Key& key) const {
-            size_t index = hash(key);
-            for (const auto& pair : table[index]) {
-                if (pair.first == key) {
-                    return pair.second;
+        std::pair<Key, Value> &operator*()
+        {
+            if (bucketIndex >= table->size() || bucketIt == (*table)[bucketIndex].end())
+                throw std::out_of_range("Iterator out of range");
+            return *bucketIt;
+        }
+        std::pair<Key, Value> *operator->() { return &(*bucketIt); }
+
+        iterator &operator++()
+        {
+            ++bucketIt;
+            skipEmpty();
+            return *this;
+        }
+        bool operator==(const iterator &other) const
+        {
+            return table == other.table && bucketIndex == other.bucketIndex && bucketIt == other.bucketIt;
+        }
+        bool operator!=(const iterator &other) const { return !(*this == other); }
+    };
+
+    // --- Const Iterator ---
+    class const_iterator
+    {
+        const Table *table;
+        size_t bucketIndex;
+        typename Bucket::const_iterator bucketIt;
+
+        void skipEmpty()
+        {
+            while (bucketIndex < table->size() && bucketIt == (*table)[bucketIndex].end())
+            {
+                ++bucketIndex;
+                if (bucketIndex < table->size())
+                {
+                    bucketIt = (*table)[bucketIndex].begin();
+                }
+                else
+                {
+                    // end() iteratörü -> bucketIt geçersiz olmalı
+                    bucketIt = typename Bucket::iterator();
                 }
             }
-            return Value();
         }
-        bool isValid(const Key& key, Value& value) const;
-        void print() const;
-        void printSorted() const;
-        bool isEmpty() const;
-        void remove(const Key& key);
-        void rehash();
-        size_t size() const;
-};
 
-template <typename Key, typename Value>
-size_t HashMap<Key, Value>::size() const {
-    return currentSize;
-}
+    public:
+        const_iterator(const Table *t, size_t idx)
+            : table(t), bucketIndex(idx)
+        {
+            if (idx >= t->size())
+            {
+                bucketIndex = t->size();
+                bucketIt = typename Bucket::const_iterator();
+            }
+            else
+            {
+                bucketIt = (*t)[idx].begin();
+                skipEmpty();
+            }
+        }
 
-template <typename Key, typename Value>
-bool HashMap<Key, Value>::isValid(const Key& key, Value& value) const {
-    size_t index = hash(key);
-    for (const auto& pair : table[index]) {
-        if (pair.first == key) {
-            value = pair.second;
-            return true;
+        const std::pair<Key, Value> &operator*() const
+        {
+            if (bucketIndex >= table->size() || bucketIt == (*table)[bucketIndex].end())
+                throw std::out_of_range("Iterator out of range");
+            return *bucketIt;
+        }
+        const std::pair<Key, Value> *operator->() const { return &(*bucketIt); }
+
+        const_iterator &operator++()
+        {
+            ++bucketIt;
+            skipEmpty();
+            return *this;
+        }
+
+        bool operator==(const const_iterator &other) const
+        {
+            return table == other.table && bucketIndex == other.bucketIndex && bucketIt == other.bucketIt;
+        }
+        bool operator!=(const const_iterator &other) const { return !(*this == other); }
+    };
+
+    // API: begin/end
+    iterator begin() { return iterator(&table, 0); }
+    iterator end() { return iterator(&table, table.size()); }
+
+    const_iterator begin() const { return const_iterator(&table, 0); }
+    const_iterator end() const { return const_iterator(&table, table.size()); }
+
+    // ---- Normal Fonksiyonlar ----
+    HashMap() : table(DEFAULT_CAPACITY) {}
+    HashMap(const HashMap &other) : table(other.table), currentSize(other.currentSize), loadFactor(other.loadFactor) {}
+    HashMap(HashMap &&other) noexcept : table(std::move(other.table)), currentSize(other.currentSize), loadFactor(other.loadFactor)
+    {
+        other.currentSize = 0;
+    }
+
+    void insert(const Key &key, const Value &value)
+    {
+        size_t index = hash(key);
+        for (auto &pair : table[index])
+        {
+            if (pair.first == key)
+            {
+                pair.second = value;
+                return;
+            }
+        }
+        table[index].emplace_back(key, value);
+        currentSize++;
+        if ((double)currentSize / table.size() > loadFactor)
+            rehash();
+    }
+
+    Value searchTable(const Key &key) const
+    {
+        size_t index = hash(key);
+        for (const auto &pair : table[index])
+        {
+            if (pair.first == key)
+                return pair.second;
+        }
+        return Value();
+    }
+
+    bool isValid(const Key &key, Value &value) const
+    {
+        size_t index = hash(key);
+        for (const auto &pair : table[index])
+        {
+            if (pair.first == key)
+            {
+                value = pair.second;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void remove(const Key &key)
+    {
+        size_t index = hash(key);
+        auto &bucket = table[index];
+        for (auto it = bucket.begin(); it != bucket.end(); ++it)
+        {
+            if (it->first == key)
+            {
+                bucket.erase(it);
+                currentSize--;
+                return;
+            }
         }
     }
-    return false;
-}
 
-template <typename Key, typename Value>
-void HashMap<Key, Value>::print() const {
-    for (const auto& bucket : table) { // bucket: her bir slot
-        for (const auto& pair : bucket) {
-            std::cout << pair.first << ": " << pair.second << std::endl;
+    void print() const
+    {
+        for (const auto &bucket : table)
+        {
+            for (const auto &pair : bucket)
+                std::cout << pair.first << ": " << pair.second << std::endl;
         }
     }
-}
 
-template <typename Key, typename Value>
-void HashMap<Key, Value>::printSorted() const {
-    std::vector<std::pair<Key, Value>> allPairs;
-    for (const auto& bucket : table) {
-        for (const auto& pair : bucket) {
-            allPairs.push_back(pair);
-        }
-    }
-    std::sort(allPairs.begin(), allPairs.end(),
-        [](const auto& a, const auto& b) {
-            if constexpr (std::is_same<Key, std::string>::value) {
+    void printSorted() const
+    {
+        std::vector<std::pair<Key, Value>> allPairs;
+        for (const auto &bucket : table)
+            for (const auto &pair : bucket)
+                allPairs.push_back(pair);
+
+        std::sort(allPairs.begin(), allPairs.end(), [](const auto &a, const auto &b)
+                  {
+            if constexpr (std::is_same<Key, std::string>::value)
                 return std::stoi(a.first) < std::stoi(b.first);
-            } else {
-                return a.first < b.first;
+            else
+                return a.first < b.first; });
+
+        for (const auto &pair : allPairs)
+            std::cout << pair.first << ": " << pair.second << std::endl;
+    }
+
+    bool isEmpty() const
+    {
+        return currentSize == 0;
+    }
+
+    size_t size() const { return currentSize; }
+
+    void rehash()
+    {
+        size_t newCapacity = table.size() * 2;
+        std::vector<std::list<std::pair<Key, Value>>> newTable(newCapacity);
+        for (const auto &bucket : table)
+        {
+            for (const auto &pair : bucket)
+            {
+                size_t newIndex = std::hash<Key>()(pair.first) % newCapacity;
+                newTable[newIndex].emplace_back(pair.first, pair.second);
             }
-        });
-
-    for (const auto& pair : allPairs) {
-        std::cout << pair.first << ": " << pair.second << std::endl;
-    }
-}
-
-template <typename Key, typename Value>
-bool HashMap<Key, Value>::isEmpty() const {
-    for (const auto& bucket : table) {
-        if (!bucket.empty()) {
-            return false;
         }
+        table = std::move(newTable);
+        std::cout << "Rehashed to new capacity: " << newCapacity << std::endl;
     }
-    return true;
-}
-
-template <typename Key, typename Value>
-void HashMap<Key, Value>::remove(const Key& key) {
-    size_t index = hash(key);
-    auto& bucket = table[index];
-    for (auto it = bucket.begin(); it != bucket.end(); ++it) {
-        if (it->first == key) {
-            bucket.erase(it);
-            currentSize--; // Silinen eleman sayısını azalt
-            return;
-        }
-    }
-}
-
-template <typename Key, typename Value>
-void HashMap<Key, Value>::rehash() {
-    size_t newCapacity = table.size() * 2;
-    std::vector<std::list<std::pair<Key, Value>>> newTable(newCapacity);
-    size_t newSize = 0;
-    for (const auto& bucket : table) {
-        for (const auto& pair : bucket) {
-            size_t newIndex = std::hash<Key>()(pair.first) % newCapacity;
-            newTable[newIndex].emplace_back(pair.first, pair.second);
-            ++newSize;
-        }
-    }
-    table = std::move(newTable);
-    std::cout << "Rehashed to new capacity: " << newCapacity << std::endl;
-    currentSize = newSize;
-}
-
+};

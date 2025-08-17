@@ -27,6 +27,8 @@ public:
             this->studentID = generateStudentID(counter++);
 
         }
+
+    
     // Getters
     std::string getName() const { return name; }
     int getAge() const { return age; }
@@ -68,7 +70,7 @@ public:
             {"studentID", studentID},
             {"department", department},
             {"gpa", gpa}
-        }.dump(); // .dump() ile string olarak döndür
+        }.dump(); // Serialize to JSON string
     }
 
     static Student fromJson(const json& j) {

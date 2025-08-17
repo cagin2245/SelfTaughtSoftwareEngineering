@@ -7,14 +7,19 @@
 class StudentManager {
 private:
     HashMap<std::string, Student> studentMap; // HashMap to store students by ID
-     // Initialize static counter for unique student IDs
+    
 public:
+    
     void addStudent(const Student& student);
     void removeStudent(const std::string& studentID);
     void printAll() const;
     bool findStudent(const std::string& studentID, Student& student) const;
     void saveToFile(const std::string& filename) const;
     void loadFromFile(const std::string& filename);
+    auto begin() { return studentMap.begin(); }
+    auto end() { return studentMap.end(); }
+        
+    
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Student& student) {

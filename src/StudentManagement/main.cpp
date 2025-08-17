@@ -15,7 +15,9 @@ int main() {
     db.addStudent(s1);
     db.addStudent(s2);
 
-    db.printAll();
+    for (auto& [k, v] : db) {
+    std::cout << k << " = " << v << "\n";
+}
     db.saveToFile("students.json");
     
     Student found;

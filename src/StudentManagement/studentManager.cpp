@@ -26,10 +26,11 @@ void StudentManager::saveToFile(const std::string& filename) const {
     }
 
     json j;
-    for (const auto& bucket : studentMap.getTable()) {
-        for (const auto& pair : bucket) {
-            j["students"].push_back(pair.second.toJsonObject()); 
-        }
+    for (const auto& [id, student] : studentMap) {
+    j["students"].push_back(student.toJsonObject()); // <-- toJsonObject() returns a JSON object
+        // or you can use student.toJson() if you want a string
+        // j["students"].push_back(student.toJson());
+    // toJson() method returns a JSON string representation of the student}
     }
 
     file << j.dump(4); // 4 = pretty print
