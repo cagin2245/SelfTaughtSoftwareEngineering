@@ -19,7 +19,7 @@ bool StudentManager::findStudent(const std::string& studentID, Student& student)
 }
 
 void StudentManager::saveToFile(const std::string& filename) const {
-     std::ofstream file(filename);
+    std::ofstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Could not open file for writing: " << filename << std::endl;
         return;
@@ -28,7 +28,7 @@ void StudentManager::saveToFile(const std::string& filename) const {
     json j;
     for (const auto& bucket : studentMap.getTable()) {
         for (const auto& pair : bucket) {
-            j["students"].push_back(pair.second.toJson());
+            j["students"].push_back(pair.second.toJsonObject()); 
         }
     }
 
@@ -41,11 +41,14 @@ void StudentManager::loadFromFile(const std::string& filename
         std::cerr << "Could not open file for reading: " << filename << std::endl;
         return;
     }
-    std::string line;
-    while (std::getline(file, line)) {
-        json j = json::parse(line);
-        Student student = Student::fromJson(j);
-        studentMap.insert(student.getStudentID(), student); // Insert the student into the map
+
+    json j;
+    file >> j;  // tüm JSON'u oku
+
+    if (j.contains("students") && j["students"].is_array()) {
+        for (const auto& item : j["students"]) {
+            Student student = Student::fromJson(item); // burada item zaten object
+            studentMap.insert(student.getStudentID(), student);
+        }
     }
-    file.close();
 }

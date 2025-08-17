@@ -5,7 +5,9 @@
 #include <sstream>
 #include <iomanip>
 
+#include "nlohmann/json.hpp"
 
+using json = nlohmann::json;
 
 class Student {
 private:
@@ -49,9 +51,45 @@ public:
         studentID = oss.str();
         return studentID;
     }
-    void printDetails() const;
-    std::string toJson() const;
-    static Student fromJson(const std::string& jsonStr);
     
+   
+
+    void printDetails() const {
+        std::cout << "Name: " << name << ", Age: " << age 
+                << ", Student ID: " << studentID 
+                << ", Department: " << department 
+                << ", GPA: " << gpa << std::endl;
+    }
+
+    std::string toJson() const {
+        return json{
+            {"name", name},
+            {"age", age},
+            {"studentID", studentID},
+            {"department", department},
+            {"gpa", gpa}
+        }.dump(); // .dump() ile string olarak döndür
+    }
+
+    static Student fromJson(const json& j) {
+        Student s(
+            j.at("name").get<std::string>(),
+            j.at("age").get<int>(),
+            j.at("department").get<std::string>(),
+            j.at("gpa").get<double>()
+        );
+        s.setStudentID(j.at("studentID").get<std::string>());
+        return s;
+    }
+    
+    json toJsonObject() const {
+        return json{
+            {"name", name},
+            {"age", age},
+            {"studentID", studentID},
+            {"department", department},
+            {"gpa", gpa}
+        };
+    }
    
 };

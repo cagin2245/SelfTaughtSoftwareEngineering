@@ -17,6 +17,7 @@ int main() {
 
     db.printAll();
     db.saveToFile("students.json");
+    
     Student found;
     if (db.findStudent("S001", found)) {
         found.printDetails();
