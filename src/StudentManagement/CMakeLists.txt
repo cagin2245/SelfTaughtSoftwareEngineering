@@ -17,5 +17,11 @@ set(SOURCES
     studentManager.cpp
 )
 
+enable_testing()
+add_executable(test_student tests/test_student.cpp StudentManager.cpp students.cpp)
+target_link_libraries(test_student gtest gtest_main pthread)
+add_test(NAME student_tests COMMAND test_student)
+
+
 # Executable
 add_executable(student_management ${SOURCES})

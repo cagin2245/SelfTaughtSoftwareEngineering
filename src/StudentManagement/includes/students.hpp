@@ -1,3 +1,6 @@
+#ifndef STUDENTS_HPP
+#define STUDENTS_HPP
+
 #include <iostream>
 #include <string>
 
@@ -63,14 +66,14 @@ public:
                 << ", GPA: " << gpa << std::endl;
     }
 
-    std::string toJson() const {
-        return json{
-            {"name", name},
-            {"age", age},
-            {"studentID", studentID},
-            {"department", department},
-            {"gpa", gpa}
-        }.dump(); // Serialize to JSON string
+    json toJson() const {
+        json j;
+        j["name"] = name;
+        j["age"] = age;
+        j["department"] = department;
+        j["gpa"] = gpa;
+        j["studentID"] = studentID;
+        return j;
     }
 
     static Student fromJson(const json& j) {
@@ -95,3 +98,5 @@ public:
     }
    
 };
+
+#endif // STUDENTS_HPP
