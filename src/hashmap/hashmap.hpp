@@ -19,6 +19,7 @@ class HashMap {
         // Removed unused tables, size, numTables, and DEFAULT_LOAD_FACTOR.
         
     public:
+
         class HashNode {
             public:
                 Key key;
@@ -29,7 +30,20 @@ class HashMap {
         };
         
         HashMap() : table(DEFAULT_CAPACITY) {} // tabloyu başlatır
+        HashMap(const HashMap& other) : table(other.table), currentSize(other.currentSize), loadFactor(other.loadFactor) 
+        {
+            // Copy constructor
+            // No need to copy the individual elements since we are copying the entire table
+        }
+        HashMap(HashMap&& other) noexcept : table(std::move(other.table)), currentSize(other.currentSize), loadFactor(other.loadFactor) {
+            // Move constructor
+            other.currentSize = 0; // Clear the moved-from object
+        }
+       
         
+        std::vector<std::list<std::pair<Key, Value>>> getTable() const {
+            return table; // Return the current table
+        }
         void insert(const Key& key, const Value& value) {
             size_t index = hash(key);
         
@@ -66,9 +80,17 @@ class HashMap {
         bool isEmpty() const;
         void remove(const Key& key);
         void rehash();
+        size_t size() const;
 
     };
 
+
+
+
+template <typename Key, typename Value>
+size_t HashMap<Key, Value>::size() const {
+    return currentSize; // Return the current size of the map
+}
 
 template <typename Key, typename Value>
 bool HashMap<Key, Value>::isValid(const Key& key, Value& value) const {

@@ -7,6 +7,9 @@ using namespace std;
 int main(int argc, char ** argv)
 {
     HashMap<string, int> map;
+    
+    
+    
     map.insert("2", 2);
     map.insert("3", 3);
     map.insert("4", 4);
@@ -20,9 +23,10 @@ int main(int argc, char ** argv)
     map.insert("11", 11);
     map.insert("12", 12);
     map.insert("13", 13); // this will trigger rehashing
-
     
+    HashMap<string, int> map2 = map; // Copy constructor
 
 
-    map.printSorted();
+
+    map2.printSorted();
 }
