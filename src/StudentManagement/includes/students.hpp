@@ -7,6 +7,7 @@
 #include <chrono>
 #include <sstream>
 #include <iomanip>
+#include <optional>
 
 #include "nlohmann/json.hpp"
 
@@ -18,7 +19,8 @@ private:
     std::string name;
     int age;
     std::string studentID;
-    std::string department;
+    std::optional<std::string> department;
+    
     double gpa;
     static int counter; // Counter for generating unique student IDs
 
@@ -37,7 +39,7 @@ public:
     std::string getName() const { return name; }
     int getAge() const { return age; }
     std::string getStudentID() const { return studentID; }
-    std::string getDepartment() const { return department; }
+    std::string getDepartment() const { return department.value_or(""); }
     double getGPA() const { return gpa; }
     // Setters
 
@@ -49,7 +51,7 @@ public:
     {
         os << "Name: " << student.name << ", Age: " << student.age
            << ", Student ID: " << student.studentID
-           << ", Department: " << student.department
+           << ", Department: " << (student.department.has_value() ? student.department.value() : "N/A")
            << ", GPA: " << student.gpa;
         return os;
     }
@@ -72,7 +74,7 @@ public:
     {
         std::cout << "Name: " << name << ", Age: " << age
                   << ", Student ID: " << studentID
-                  << ", Department: " << department
+                  << ", Department: " << (department.has_value() ? department.value() : "N/A")
                   << ", GPA: " << gpa << std::endl;
     }
 
@@ -94,9 +96,9 @@ public:
             Student s(
                 j.at("name").get<std::string>(),
                 j.at("age").get<int>(),
+                j.at("studentID").get<std::string>(),
                 j.at("department").get<std::string>(),
                 j.at("gpa").get<double>());
-            s.setStudentID(j.at("studentID").get<std::string>());
             return s;
         }
         catch (const json::exception &e)
