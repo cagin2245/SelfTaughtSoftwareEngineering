@@ -7,9 +7,6 @@ Bu depo, C++ ve C dillerinde veri yapıları, algoritmalar, temel yazılım müh
 - **COPL/**  
   C dilinde sanal makine ve ilgili başlık dosyaları (`COPL.c`, `memory.h`, `object.h`, `vm.h`).
 
-- **Scanner/**  
-  (Detaylar için ilgili klasöre bakınız.)
-
 - **includes/**  
   Ortak başlık dosyaları (ör. `calculator.hpp`).
 
