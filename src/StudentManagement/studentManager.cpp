@@ -6,7 +6,7 @@ using json = nlohmann::json;
 
 
 void StudentManager::addStudent(const Student& student) {
-    studentMap.insert(student.getStudentID(), student);
+    studentMap.insert(student.getStudentID(), std::make_shared<Student>(student));
 }
 void StudentManager::removeStudent(const std::string& studentID) {
     studentMap.remove(studentID);
@@ -15,7 +15,8 @@ void StudentManager::printAll() const {
     studentMap.print();
 }
 bool StudentManager::findStudent(const std::string& studentID, Student& student) const {
-    return studentMap.isValid(studentID, student);
+    std::shared_ptr<Student> ptr;
+    return studentMap.isValid(studentID, ptr) ? (student = *ptr, true) : false;
 }
 
 void StudentManager::saveToFile(const std::string& filename) const {
@@ -27,10 +28,8 @@ void StudentManager::saveToFile(const std::string& filename) const {
 
     json j;
     for (const auto& [id, student] : studentMap) {
-    j["students"].push_back(student.toJsonObject()); // <-- toJsonObject() returns a JSON object
-        // or you can use student.toJson() if you want a string
-        // j["students"].push_back(student.toJson());
-    // toJson() method returns a JSON string representation of the student}
+    j["students"].push_back(student->toJsonObject()); 
+        
     }
 
     file << j.dump(4); // 4 = pretty print
@@ -49,7 +48,7 @@ void StudentManager::loadFromFile(const std::string& filename
     if (j.contains("students") && j["students"].is_array()) {
         for (const auto& item : j["students"]) {
             Student student = Student::fromJson(item); // burada item zaten object
-            studentMap.insert(student.getStudentID(), student);
+            studentMap.insert(student.getStudentID(), std::make_shared<Student>(student));
         }
     }
 }

@@ -6,7 +6,7 @@
 
 class StudentManager {
 private:
-    HashMap<std::string, Student> studentMap; // HashMap to store students by ID
+    HashMap<std::string, std::shared_ptr<Student>> studentMap; // HashMap to store students by ID
     
 public:
     
