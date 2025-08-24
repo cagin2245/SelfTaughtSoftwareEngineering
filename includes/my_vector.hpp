@@ -3,19 +3,17 @@
 #include <iostream>
 #include <memory>
 
-
 template <typename T>
 class MyVector
 {
 private:
-    T *data_;
+    std::unique_ptr<T[]> data_;
     size_t capacity_;
     size_t size_;
 
 public:
     MyVector();
     MyVector(std::size_t n, const T &value);
-    ~MyVector();
 
     MyVector(const MyVector &other);                // copy constructor
     MyVector &operator=(const MyVector &other);     // copy assignment operator
@@ -23,7 +21,7 @@ public:
     MyVector &operator=(MyVector &&other) noexcept; // move assignment operator
 
     void push_back(const T &value);
-    void push_back(T &&value);// For rvalue references
+    void push_back(T &&value); // For rvalue references
     void pop_back();
     void erase(std::size_t index); // Remove element at index
     T &operator[](std::size_t index);
@@ -79,10 +77,10 @@ public:
         bool operator!=(const ConstIterator &other) const { return ptr != other.ptr; }
     };
 
-    Iterator begin() { return Iterator(data_); }
-    Iterator end() { return Iterator(data_ + size_); }
-    ConstIterator begin() const { return ConstIterator(data_); }
-    ConstIterator end() const { return ConstIterator(data_ + size_); }
+    Iterator begin() { return Iterator(data_.get()); }
+    Iterator end() { return Iterator(data_.get() + size_); }
+    ConstIterator begin() const { return ConstIterator(data_.get()); }
+    ConstIterator end() const { return ConstIterator(data_.get() + size_); }
 };
 
 // Implementation
@@ -91,25 +89,20 @@ template <typename T>
 MyVector<T>::MyVector() : data_(nullptr), capacity_(0), size_(0) {}
 
 template <typename T>
-MyVector<T>::MyVector(std::size_t n, const T &value) : data_(nullptr), capacity_(n), size_(n)
+MyVector<T>::MyVector(std::size_t n, const T &value) 
+    : data_(std::make_unique<T[]>(n)), capacity_(n), size_(n)
 {
-    data_ = new T[capacity_];
+
     for (size_t i = 0; i < size_; ++i)
     {
         data_[i] = value;
     }
 }
-
 template <typename T>
-MyVector<T>::~MyVector()
+MyVector<T>::MyVector(const MyVector &other)
+    : data_(std::make_unique<T[]>(other.capacity_)), capacity_(other.capacity_), size_(other.size_)
 {
-    delete[] data_;
-}
 
-template <typename T>
-MyVector<T>::MyVector(const MyVector &other) : data_(nullptr), capacity_(other.capacity_), size_(other.size_)
-{
-    data_ = new T[capacity_];
     for (size_t i = 0; i < size_; ++i)
     {
         data_[i] = other.data_[i];
@@ -117,9 +110,9 @@ MyVector<T>::MyVector(const MyVector &other) : data_(nullptr), capacity_(other.c
 }
 
 template <typename T>
-MyVector<T>::MyVector(MyVector &&other) noexcept : data_(other.data_), capacity_(other.capacity_), size_(other.size_)
+MyVector<T>::MyVector(MyVector &&other) noexcept 
+: data_(std::move(other.data_)), capacity_(other.capacity_), size_(other.size_)
 {
-    other.data_ = nullptr;
     other.capacity_ = 0;
     other.size_ = 0;
 }
@@ -140,9 +133,11 @@ MyVector<T> &MyVector<T>::operator=(MyVector &&other) noexcept
 {
     if (this != &other)
     {
-        std::swap(data_, other.data_);
-        std::swap(size_, other.size_);
-        std::swap(capacity_, other.capacity_);
+       data_ = std::move(other.data_);
+       capacity_ = other.capacity_;
+       size_ = other.size_;
+       other.capacity_ = 0;
+       other.size_ = 0;
     }
     return *this;
 }
@@ -172,7 +167,6 @@ void MyVector<T>::pop_back()
 {
     if (size_ > 0)
     {
-        data_[size_ - 1].~T();
         --size_;
     }
 }
@@ -187,8 +181,7 @@ void MyVector<T>::erase(std::size_t index)
     for (size_t i = index; i < size_ - 1; ++i)
     {
         data_[i] = std::move(data_[i + 1]);
-    }
-    data_[size_ - 1].~T();
+    }   
     --size_;
 }
 
@@ -289,10 +282,6 @@ const T &MyVector<T>::back() const
 template <typename T>
 void MyVector<T>::clear()
 {
-    for (size_t i = 0; i < size_; ++i)
-    {
-        data_[i].~T();
-    }
     size_ = 0;
 }
 
@@ -301,13 +290,13 @@ void MyVector<T>::reserve(std::size_t newCapacity)
 {
     if (newCapacity <= capacity_)
         return;
-    T *newData = new T[newCapacity];
+    auto newData = std::make_unique<T[]>(newCapacity);
     for (size_t i = 0; i < size_; ++i)
     {
         newData[i] = std::move(data_[i]);
     }
-    delete[] data_;
-    data_ = newData;
+    
+    data_ = std::move(newData);
     capacity_ = newCapacity;
 }
 
@@ -316,10 +305,7 @@ void MyVector<T>::resize(std::size_t newSize, const T &value)
 {
     if (newSize < size_)
     {
-        for (std::size_t i = newSize; i < size_; ++i)
-        {
-            data_[i].~T();
-        }
+        
         size_ = newSize;
     }
     else if (newSize > size_)
@@ -368,13 +354,13 @@ void MyVector<T>::shrink_to_fit()
 {
     if (size_ < capacity_)
     {
-        T *newData = new T[size_];
+        auto newData = std::make_unique<T[]>(size_);
         for (size_t i = 0; i < size_; ++i)
         {
             newData[i] = std::move(data_[i]);
         }
-        delete[] data_;
-        data_ = newData;
+        
+        data_ = std::move(newData);
         capacity_ = size_;
     }
 }
