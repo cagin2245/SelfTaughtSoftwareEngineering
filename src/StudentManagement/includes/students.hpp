@@ -22,13 +22,19 @@ private:
     std::optional<std::string> department;
     
     double gpa;
-    static int counter; // Counter for generating unique student IDs
-
-public:
-    // Constructor
-    Student() : name(""), age(0), department(""), gpa(0.0) {}
-    Student(std::string name, int age, std::string id, std::string dept, double gpa)
-        : name(std::move(name)), age(age), studentID(std::move(id)), department(std::move(dept)), gpa(gpa) {}
+    inline static int counter = 0; // Counter for generating unique student IDs (inline to avoid ODR issues)
+ 
+ public:
+     // Constructor
+     Student() : name(""), age(0), department(""), gpa(0.0) {}
+    // Convenience ctor that auto-generates a studentID
+    Student(std::string name, int age, std::string dept, double gpa)
+        : name(std::move(name)), age(age), studentID(""), department(std::move(dept)), gpa(gpa)
+    {
+        studentID = generateStudentID(++counter);
+    }
+     Student(std::string name, int age, std::string id, std::string dept, double gpa)
+         : name(std::move(name)), age(age), studentID(std::move(id)), department(std::move(dept)), gpa(gpa) {}
     Student(const Student &) = default;                // copy ctor
     Student(Student &&) noexcept = default;            // move ctor
     Student &operator=(const Student &) = default;     // copy assign

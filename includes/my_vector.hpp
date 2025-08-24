@@ -23,6 +23,7 @@ public:
     MyVector &operator=(MyVector &&other) noexcept; // move assignment operator
 
     void push_back(const T &value);
+    void push_back(T &&value);// For rvalue references
     void pop_back();
     void erase(std::size_t index); // Remove element at index
     T &operator[](std::size_t index);
@@ -154,6 +155,16 @@ void MyVector<T>::push_back(const T &value)
         reserve(capacity_ == 0 ? 1 : capacity_ * 2);
     }
     data_[size_++] = value;
+}
+
+template <typename T>
+void MyVector<T>::push_back(T &&value) // For rvalue references
+{
+    if (size_ >= capacity_)
+    {
+        reserve(capacity_ == 0 ? 1 : capacity_ * 2);
+    }
+    data_[size_++] = std::move(value);
 }
 
 template <typename T>
