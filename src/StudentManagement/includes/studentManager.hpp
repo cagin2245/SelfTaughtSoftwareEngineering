@@ -22,10 +22,3 @@ public:
     
 };
 
-inline std::ostream& operator<<(std::ostream& os, const Student& student) {
-    os << "Name: " << student.getName() << ", Age: " << student.getAge()
-       << ", Student ID: " << student.getStudentID() 
-       << ", Department: " << student.getDepartment() 
-       << ", GPA: " << student.getGPA();
-    return os;
-}
